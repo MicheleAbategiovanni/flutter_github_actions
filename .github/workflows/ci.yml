@@ -76,7 +76,7 @@ jobs:
         id: extract_version
         run: |
           version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
-          echo "::set-output name=version::$version"
+          echo "version=$version"
 
       - name: Check if Tag Exists
         id: check_tag
@@ -92,7 +92,7 @@ jobs:
         id: modify_tag
         run: |
           new_version="${{ steps.extract_version.outputs.version }}-build-${{ github.run_number }}"
-          echo "::set-output name=version::$new_version"
+          echo "version=$new_version"
 
   create_release:
     needs: [versioning, build_android, build_ios]
