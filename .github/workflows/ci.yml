@@ -10,7 +10,7 @@ jobs:
     name: Run flutter test and analyze
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@main
       - uses: actions/setup-java@v1
         with:
           java-version: "17.x"
@@ -21,62 +21,75 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
-  build_ios:
-    name: 🎉 Build iOS app
-    needs: ["flutter_test"]
+  build:
+    name: 🐙 Build & Release
     runs-on: macos-latest
+    needs: flutter_test
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
+      #1 Checkout Repository
+      - name: 📦 Checkout Repository
+        uses: actions/checkout@main
+
+        #2 Setup Java
+      - name: 📦 Set Up Java
+        uses: actions/setup-java@v3.12.0
         with:
-          java-version: "17.x"
-      - uses: subosito/flutter-action@v1
+          distribution: "oracle"
+          java-version: "17"
+
+        #3 Setup Flutter
+      - name: 📦 Set Up Flutter
+        uses: subosito/flutter-action@v2
         with:
+          # flutter-version: "3.22.2"
           channel: "stable"
-      - run: flutter pub get
-      - run: flutter clean
-      - run: flutter build ios --release --no-codesign
-      
-      - name: Upload .ipa file
+
+        #4 Install Dependencies
+      - name: 📦 Install Dependencies
+        run: flutter pub get
+
+      #   #5 Setup Keystore
+      # - name: Decode Keystore
+      #   run: |
+      #     echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
+
+        #6 Building APK
+      - name: 🛠️ Build APK
+        run: flutter build apk --release
+
+        #7 Building App Bundle (aab)
+      - name: 🛠️ Build appBundle
+        run: flutter build appbundle
+
+        #8 Build IPA ( IOS Build )
+      - name: 🛠️ Build IPA
+        run: flutter build ipa --no-codesign
+
+      - name: 🗃️ Compress Archives and IPAs
+        run: |
+          cd build
+          tar -czf ios_build.tar.gz ios
+
+        #9 Upload Artifacts
+      - name: 🆙 Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ios-app
-          path: build/ios/iphoneos/*.app
+          name: Releases
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+            build/ios_build.tar.gz
 
-  build_android:
-    name: 🎉 Build Android app
-    needs: ["flutter_test"]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
-        with:
-          java-version: "17.x"
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-      - run: flutter pub get
-      - run: flutter clean
-      - run: flutter build apk --release
-
-      - name: Upload APK file
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-app
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-  versioning:
-    name: ⭕ Check and prefix release
-    needs: [build_android, build_ios]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Extract version from pubspec.yaml
+        #10 Extract Version
+      - name: ⛏️ Extract version from pubspec.yaml
         id: extract_version
         run: |
           version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
-          echo "VERSION=$version" >> $GITHUB_ENV  # Imposta la variabile di ambiente
+          echo "VERSION=$version" >> $GITHUB_ENV
 
-      - name: Check if Tag Exists
+        #11 Check if Tag Exists
+      - name: ✅ Check if Tag Exists
         id: check_tag
         run: |
           if git rev-parse "v${{ env.VERSION }}" >/dev/null 2>&1; then
@@ -85,29 +98,18 @@ jobs:
             echo "TAG_EXISTS=false" >> $GITHUB_ENV
           fi
 
-      - name: Modify Tag
+        #12 Modify Tag if it Exists
+      - name: 🖊️ Modify Tag
         if: env.TAG_EXISTS == 'true'
+        id: modify_tag
         run: |
           new_version="${{ env.VERSION }}-build-${{ github.run_number }}"
-          echo "VERSION=$new_version" >> $GITHUB_ENV  # Imposta la nuova versione
+          echo "VERSION=$new_version" >> $GITHUB_ENV  # Imposta la nuova versione su $GITHUB_ENV
 
-  create_release:
-    needs: [versioning, build_android, build_ios]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download iOS Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ios-app
-
-      - name: Download Android Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: android-app
-
-      - name: Create Release
+        #13 Create Release
+      - name: 🎉 Create Release 🎉
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/app/outputs/flutter-apk/app-release.apk,ios-app/*.app"
-          tag: v${{ env.VERSION }}  # Usa la variabile di ambiente per il tag
-          token: ${{ secrets.TOKEN }}  # Secret token of GitHub account
+          artifacts: "build/app/outputs/flutter-apk/app-release.apk,build/app/outputs/bundle/release/app-release.aab,build/ios_build.tar.gz"
+          tag: v${{ env.VERSION }}
+          token: ${{ secrets.TOKEN }}
