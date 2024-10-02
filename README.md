@@ -2,6 +2,9 @@
 
 A new Flutter project.
 
+https://github.com/MicheleAbategiovanni/flutter_github_actions/actions/workflows/WORKFLOW-FILE/badge.svg
+
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
