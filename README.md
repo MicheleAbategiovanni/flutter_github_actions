@@ -1,20 +1,26 @@
-# flutter_github_actions
+<p align="center"><a href="https://github.com/MicheleAbategiovanni" target="_blank"><img src="logo.png" width="150" alt="Michele Abategiovanni Logo"></a></p>
 
-A new Flutter project.
+# Flutter App Base
+
+This repository contains the base structure for a Flutter app. It includes a CI/CD workflow that automates testing and building for both Android and iOS platforms.
+
+## Features
+
+- **Automated Testing**: Runs Flutter tests to ensure the app behaves as expected.
+- **Build & Release**: If all tests pass, the workflow proceeds to build and release the app for both Android and iOS platforms.
+
+## Workflow Overview
 
 <img src="https://github.com/MicheleAbategiovanni/flutter_github_actions/actions/workflows/ci.yml/badge.svg">
 
+The repository is equipped with a CI/CD pipeline that consists of two main stages:
 
-## Getting Started
+1. **Testing Stage**
+    - Runs `flutter test` on the application.
+    - Ensures that all the app's tests pass successfully before proceeding to the next stage.
 
-This project is a starting point for a Flutter application.
+2. **Build & Release Stage**
+    - Builds the Flutter app for Android and iOS.
+    - Creates the release artifacts for both platforms (APK for Android and IPA for iOS).
+    - This stage is triggered only if all tests in the first stage pass.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-Soaaaaaame changes
