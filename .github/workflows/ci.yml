@@ -24,6 +24,7 @@ jobs:
   build:
     name: Build & Release
     runs-on: macos-latest
+    needs: flutter_test
 
     steps:
       #1 Checkout Repository
@@ -72,7 +73,7 @@ jobs:
 
         #9 Upload Artifacts
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Releases
           path: |
@@ -85,13 +86,13 @@ jobs:
         id: extract_version
         run: |
           version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
-          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "::set-output name=version::$version"
 
         #11 Check if Tag Exists
       - name: Check if Tag Exists
         id: check_tag
         run: |
-          if git rev-parse "v${{ env.VERSION }}" >/dev/null 2>&1; then
+          if git rev-parse "v${{ steps.extract_version.outputs.version }}" >/dev/null 2>&1; then
             echo "TAG_EXISTS=true" >> $GITHUB_ENV
           else
             echo "TAG_EXISTS=false" >> $GITHUB_ENV
@@ -102,8 +103,8 @@ jobs:
         if: env.TAG_EXISTS == 'true'
         id: modify_tag
         run: |
-          new_version="${{ env.VERSION }}-build-${{ github.run_number }}"
-          echo "VERSION=$new_version" >> $GITHUB_ENV
+          new_version="${{ steps.extract_version.outputs.version }}-build-${{ github.run_number }}"
+          echo "::set-output name=version::$new_version"
 
         #13 Create Release
       - name: Create Release
