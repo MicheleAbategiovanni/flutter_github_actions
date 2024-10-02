@@ -39,13 +39,13 @@ jobs:
       - name: Compress Archives and IPAs
         run: |
           cd build/ios/iphoneos
-          tar -czf ios_build.tar.gz *.app # Aggiusta il percorso se necessario
+          tar -czf ios_build.tar.gz *.app
 
       - name: Upload .ipa file
         uses: actions/upload-artifact@v4
         with:
           name: iOS-app
-          path: build/ios/iphoneos/*.app/*.ipa 
+          path: build/ios_build.tar.gz 
 
   build_android:
     name: 🎉 Build Android app
@@ -77,6 +77,6 @@ jobs:
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/app/outputs/flutter-apk/app-release.apk,build/ios/iphoneos/*.app/*.ipa"
+          artifacts: "build/app/outputs/flutter-apk/app-release.apk,build/app/outputs/flutter-apk/app-release.apk,build/ios/iphoneos/*.app/*.ipa"
           tag: v1
           token: ${{ secrets.TOKEN }}
