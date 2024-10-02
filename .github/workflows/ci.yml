@@ -21,7 +21,7 @@ jobs:
       - run: flutter test
 
   build_ios:
-    name: Build iOS app
+    name: 🎉 Build iOS app
     needs: ["flutter_test"]
     runs-on: macos-latest
     steps:
@@ -34,16 +34,21 @@ jobs:
           channel: "stable"
       - run: flutter pub get
       - run: flutter clean
-      - run: flutter build ios --release --no-codesign
+      - run: flutter build ios --no-codesign
+
+      - name: Compress Archives and IPAs
+        run: |
+          cd build/ios/iphoneos
+          tar -czf ios_build.tar.gz *.app # Aggiusta il percorso se necessario
 
       - name: Upload .ipa file
         uses: actions/upload-artifact@v4
         with:
           name: iOS-app
-          path: build/ios/iphoneos/*.ipa
+          path: build/ios/iphoneos/*.app/*.ipa 
 
   build_android:
-    name: Build Android app
+    name: 🎉 Build Android app
     needs: ["flutter_test"]
     runs-on: ubuntu-latest
     steps:
@@ -63,3 +68,15 @@ jobs:
         with:
           name: Android-app
           path: build/app/outputs/flutter-apk/app-release.apk
+
+  # Esempio di come creare una release
+  create_release:
+    needs: [build_android, build_ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/app/outputs/flutter-apk/app-release.apk,build/ios/iphoneos/*.app/*.ipa"
+          tag: v1
+          token: ${{ secrets.TOKEN }}
