@@ -86,13 +86,13 @@ jobs:
         id: extract_version
         run: |
           version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
-          echo "::set-output name=version::$version"
+          echo "VERSION=$version" >> $GITHUB_ENV
 
         #11 Check if Tag Exists
       - name: Check if Tag Exists
         id: check_tag
         run: |
-          if git rev-parse "v${{ steps.extract_version.outputs.version }}" >/dev/null 2>&1; then
+          if git rev-parse "v${{ env.VERSION }}" >/dev/null 2>&1; then
             echo "TAG_EXISTS=true" >> $GITHUB_ENV
           else
             echo "TAG_EXISTS=false" >> $GITHUB_ENV
@@ -103,8 +103,8 @@ jobs:
         if: env.TAG_EXISTS == 'true'
         id: modify_tag
         run: |
-          new_version="${{ steps.extract_version.outputs.version }}-build-${{ github.run_number }}"
-          echo "::set-output name=version::$new_version"
+          new_version="${{ env.VERSION }}-build-${{ github.run_number }}"
+          echo "VERSION=$new_version" >> $GITHUB_ENV  # Imposta la nuova versione su $GITHUB_ENV
 
         #13 Create Release
       - name: Create Release
