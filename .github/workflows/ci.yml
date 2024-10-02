@@ -98,7 +98,7 @@ jobs:
           echo "VERSION=$new_version" >> $GITHUB_ENV
 
   create_release:
-    needs: [build_android, build_ios]
+    needs: [versioning, build_android, build_ios]
     runs-on: ubuntu-latest
     steps:
       - name: Create Release
