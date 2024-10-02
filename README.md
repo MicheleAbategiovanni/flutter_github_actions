@@ -2,7 +2,7 @@
 
 A new Flutter project.
 
-https://github.com/MicheleAbategiovanni/flutter_github_actions/actions/workflows/WORKFLOW-FILE/badge.svg
+https://github.com/MicheleAbategiovanni/flutter_github_actions/actions/workflows/ci.yml/badge.svg
 
 
 ## Getting Started
