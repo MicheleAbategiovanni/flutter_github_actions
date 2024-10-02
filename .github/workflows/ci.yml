@@ -37,15 +37,10 @@ jobs:
       - run: flutter clean
       - run: flutter build ios --release --no-codesign
       
-      - name: Compress Archives and IPAs
-        run: |
-          cd build/ios/iphoneos
-          tar -czf ios_build.tar.gz *.app
-
       - name: Upload .ipa file
         uses: actions/upload-artifact@v4
         with:
-          name: iOS-app
+          name: ios-app
           path: build/ios/iphoneos/*.app
 
   build_android:
@@ -67,24 +62,26 @@ jobs:
       - name: Upload APK file
         uses: actions/upload-artifact@v4
         with:
-          name: Android-app
+          name: android-app
           path: build/app/outputs/flutter-apk/app-release.apk
 
   versioning:
     name: ⭕ Check and prefix release
     needs: [build_android, build_ios]
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
     steps:
       - name: Extract version from pubspec.yaml
         id: extract_version
         run: |
           version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
-          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "::set-output name=version::$version"
 
       - name: Check if Tag Exists
         id: check_tag
         run: |
-          if git rev-parse "v${{ env.VERSION }}" >/dev/null 2>&1; then
+          if git rev-parse "v${{ steps.extract_version.outputs.version }}" >/dev/null 2>&1; then
             echo "TAG_EXISTS=true" >> $GITHUB_ENV
           else
             echo "TAG_EXISTS=false" >> $GITHUB_ENV
@@ -94,16 +91,26 @@ jobs:
         if: env.TAG_EXISTS == 'true'
         id: modify_tag
         run: |
-          new_version="${{ env.VERSION }}-build-${{ github.run_number }}"
-          echo "VERSION=$new_version" >> $GITHUB_ENV
+          new_version="${{ steps.extract_version.outputs.version }}-build-${{ github.run_number }}"
+          echo "::set-output name=version::$new_version"
 
   create_release:
     needs: [versioning, build_android, build_ios]
     runs-on: ubuntu-latest
     steps:
+      - name: Download iOS Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ios-app
+
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: android-app
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/app/outputs/flutter-apk/app-release.apk,build/ios/iphoneos/*.app"
-          tag: v${{ env.VERSION }}
-          token: ${{ secrets.TOKEN }}  # Secret tokes of github account
+          artifacts: "build/app/outputs/flutter-apk/app-release.apk,ios-app/*.app"
+          tag: v${{ needs.versioning.outputs.version }}
+          token: ${{ secrets.TOKEN }}  # Secret token of GitHub account
