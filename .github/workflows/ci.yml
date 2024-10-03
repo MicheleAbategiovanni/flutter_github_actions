@@ -10,7 +10,7 @@ jobs:
     name: Run flutter test and analyze
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@main
       - uses: actions/setup-java@v1
         with:
           java-version: "17.x"
@@ -22,31 +22,31 @@ jobs:
       - run: flutter test
 
   build:
-    name: Build & Release
+    name: 🐙 Build & Release
     runs-on: macos-latest
     needs: flutter_test
 
     steps:
       #1 Checkout Repository
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: 📦 Checkout Repository
+        uses: actions/checkout@main
 
         #2 Setup Java
-      - name: Set Up Java
+      - name: 📦 Set Up Java
         uses: actions/setup-java@v3.12.0
         with:
           distribution: "oracle"
           java-version: "17"
 
         #3 Setup Flutter
-      - name: Set Up Flutter
+      - name: 📦 Set Up Flutter
         uses: subosito/flutter-action@v2
         with:
           # flutter-version: "3.22.2"
           channel: "stable"
 
         #4 Install Dependencies
-      - name: Install Dependencies
+      - name: 📦 Install Dependencies
         run: flutter pub get
 
       #   #5 Setup Keystore
@@ -55,24 +55,24 @@ jobs:
       #     echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
 
         #6 Building APK
-      - name: Build APK
+      - name: 🛠️ Build APK
         run: flutter build apk --release
 
         #7 Building App Bundle (aab)
-      - name: Build appBundle
+      - name: 🛠️ Build appBundle
         run: flutter build appbundle
 
         #8 Build IPA ( IOS Build )
-      - name: Build IPA
+      - name: 🛠️ Build IPA
         run: flutter build ipa --no-codesign
 
-      - name: Compress Archives and IPAs
+      - name: 🗃️ Compress Archives and IPAs
         run: |
           cd build
           tar -czf ios_build.tar.gz ios
 
         #9 Upload Artifacts
-      - name: Upload Artifacts
+      - name: 🆙 Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Releases
@@ -82,32 +82,32 @@ jobs:
             build/ios_build.tar.gz
 
         #10 Extract Version
-      - name: Extract version from pubspec.yaml
+      - name: ⛏️ Extract version from pubspec.yaml
         id: extract_version
         run: |
           version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
-          echo "::set-output name=version::$version"
+          echo "VERSION=$version" >> $GITHUB_ENV
 
         #11 Check if Tag Exists
-      - name: Check if Tag Exists
+      - name: ✅ Check if Tag Exists
         id: check_tag
         run: |
-          if git rev-parse "v${{ steps.extract_version.outputs.version }}" >/dev/null 2>&1; then
+          if git rev-parse "v${{ env.VERSION }}" >/dev/null 2>&1; then
             echo "TAG_EXISTS=true" >> $GITHUB_ENV
           else
             echo "TAG_EXISTS=false" >> $GITHUB_ENV
           fi
 
         #12 Modify Tag if it Exists
-      - name: Modify Tag
+      - name: 🖊️ Modify Tag
         if: env.TAG_EXISTS == 'true'
         id: modify_tag
         run: |
-          new_version="${{ steps.extract_version.outputs.version }}-build-${{ github.run_number }}"
-          echo "::set-output name=version::$new_version"
+          new_version="${{ env.VERSION }}-build-${{ github.run_number }}"
+          echo "VERSION=$new_version" >> $GITHUB_ENV  # Imposta la nuova versione su $GITHUB_ENV
 
         #13 Create Release
-      - name: Create Release
+      - name: 🎉 Create Release 🎉
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/app/outputs/flutter-apk/app-release.apk,build/app/outputs/bundle/release/app-release.aab,build/ios_build.tar.gz"
